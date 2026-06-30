@@ -108,6 +108,7 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
   const [formMaxHeight, setFormMaxHeight] = useState<number | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const highlightRef = useRef<HTMLDivElement | null>(null);
+  const savedSelectionRef = useRef<SavedSelection | null>(null);
   const isEditingRef = useRef(false);
 
   const isMac = useMemo(
@@ -156,12 +157,58 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
     [containerRef],
   );
 
+  const updateFormMaxHeightFromRect = useCallback((rect: DOMRect) => {
+    const minTopPadding = 8;
+    const gapFromSelection = 8;
+    const availableHeight = rect.top - minTopPadding - gapFromSelection;
+    const defaultMaxHeight = 300;
+
+    if (availableHeight < defaultMaxHeight && availableHeight > 0) {
+      setFormMaxHeight(availableHeight);
+    } else {
+      setFormMaxHeight(null);
+    }
+  }, []);
+
+  const updatePositionFromRange = useCallback(
+    (range: Range, editing = isEditingRef.current) => {
+      const gapFromSelection = 8;
+
+      if (editing) {
+        const rects = range.getClientRects();
+        if (rects.length === 0) return;
+
+        let topRect = rects[0];
+        for (let i = 1; i < rects.length; i++) {
+          if (rects[i].top < topRect.top) {
+            topRect = rects[i];
+          }
+        }
+
+        updateFormMaxHeightFromRect(topRect);
+        setPosition({
+          x: topRect.left,
+          y: topRect.top - gapFromSelection,
+        });
+        return;
+      }
+
+      const rect = range.getBoundingClientRect();
+      setPosition({
+        x: rect.left + rect.width / 2,
+        y: rect.top - gapFromSelection,
+      });
+    },
+    [updateFormMaxHeightFromRect],
+  );
+
   const updatePosition = useCallback(() => {
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !containerRef.current) {
       // Keep highlight while editing
       if (!isEditing) {
         setVisible(false);
+        savedSelectionRef.current = null;
         setSavedSelection(null);
         updateHighlight(null);
       }
@@ -172,6 +219,7 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
     if (!anchorNode || !containerRef.current.contains(anchorNode)) {
       if (!isEditing) {
         setVisible(false);
+        savedSelectionRef.current = null;
         setSavedSelection(null);
         updateHighlight(null);
       }
@@ -179,14 +227,12 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
     }
 
     const range = sel.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-
     // Get line numbers
     const lineRange = getSelectionLineRange(sel);
     const { beforeText, afterText } = getSelectionContext(range);
 
     // Save selection range
-    setSavedSelection({
+    const nextSavedSelection = {
       range: range.cloneRange(),
       text: sel.toString(),
       startLine: lineRange?.startLine ?? 1,
@@ -195,14 +241,13 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
       endOffset: getLineOffset(range.endContainer, range.endOffset),
       beforeText,
       afterText,
-    });
+    };
+    savedSelectionRef.current = nextSavedSelection;
+    setSavedSelection(nextSavedSelection);
 
-    setPosition({
-      x: rect.left + rect.width / 2,
-      y: rect.top - 8,
-    });
+    updatePositionFromRange(range);
     setVisible(true);
-  }, [containerRef, isEditing, updateHighlight]);
+  }, [containerRef, isEditing, updateHighlight, updatePositionFromRange]);
 
   const handleCommentClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -213,36 +258,7 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
       updateHighlight(savedSelection.range);
 
       // Position input above the selection
-      const rects = savedSelection.range.getClientRects();
-      if (rects.length > 0) {
-        // Find topmost rect
-        let topRect = rects[0];
-        for (let i = 1; i < rects.length; i++) {
-          if (rects[i].top < topRect.top) {
-            topRect = rects[i];
-          }
-        }
-
-        // Calculate max height based on available space above selection
-        // Leave 8px padding from viewport top and 8px gap from selection
-        const minTopPadding = 8;
-        const gapFromSelection = 8;
-        const availableHeight = topRect.top - minTopPadding - gapFromSelection;
-
-        // Default CSS max-height is around 300px (textarea 50vh max + actions)
-        // If available space is less than that, constrain the form
-        const defaultMaxHeight = 300;
-        if (availableHeight < defaultMaxHeight && availableHeight > 0) {
-          setFormMaxHeight(availableHeight);
-        } else {
-          setFormMaxHeight(null);
-        }
-
-        setPosition({
-          x: topRect.left,
-          y: topRect.top - gapFromSelection,
-        });
-      }
+      updatePositionFromRange(savedSelection.range, true);
     }
 
     setIsEditing(true);
@@ -269,6 +285,7 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
     setIsEditing(false);
     isEditingRef.current = false;
     setVisible(false);
+    savedSelectionRef.current = null;
     setSavedSelection(null);
     updateHighlight(null);
     setFormMaxHeight(null);
@@ -279,6 +296,7 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
     setIsEditing(false);
     isEditingRef.current = false;
     setVisible(false);
+    savedSelectionRef.current = null;
     setSavedSelection(null);
     updateHighlight(null);
     setFormMaxHeight(null);
@@ -311,6 +329,7 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
       }
       if (!isEditingRef.current) {
         setVisible(false);
+        savedSelectionRef.current = null;
         setSavedSelection(null);
         updateHighlight(null);
       }
@@ -324,6 +343,24 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
       document.removeEventListener('mousedown', handleMouseDown);
     };
   }, [updatePosition, updateHighlight]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleViewportChange = () => {
+      const currentSelection = savedSelectionRef.current;
+      if (!currentSelection) return;
+      updatePositionFromRange(currentSelection.range);
+    };
+
+    window.addEventListener('scroll', handleViewportChange, true);
+    window.addEventListener('resize', handleViewportChange);
+
+    return () => {
+      window.removeEventListener('scroll', handleViewportChange, true);
+      window.removeEventListener('resize', handleViewportChange);
+    };
+  }, [visible, updatePositionFromRange]);
 
   // Cleanup
   useEffect(() => {

@@ -171,6 +171,23 @@ md-review-codex docs --port 3030 --active-file docs/guide.v2.md
 6. Codex 通过批量 `PATCH /api/comments` 回写每条评论的处理状态
 7. 用户在同一个 review server 中选择新版本继续评审
 
+### 安装 Codex Skill
+
+仓库内提供 `markdown-review-loop` skill，用于让 Codex 自动执行启动 review server、读取评论、生成下一版 Markdown 和回写状态的流程。
+
+```sh
+mkdir -p ~/.codex/skills
+cp -R skills/markdown-review-loop ~/.codex/skills/
+```
+
+安装后可通过 `$markdown-review-loop` 显式触发，例如：
+
+```text
+使用 $markdown-review-loop 帮我启动这份 Markdown 的评审循环。
+```
+
+skill 依赖本机可运行 `md-review-codex`。本地开发阶段可以先在仓库中执行 `npm link`，或使用发布后的 npm 包。
+
 ## 评论管理
 
 ### 添加评论

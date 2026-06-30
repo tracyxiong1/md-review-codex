@@ -30,8 +30,8 @@ Comments are persisted by the server in sidecar review files and exposed through
 
 ### Two Runtime Modes
 
-1. **CLI Mode** (`md-review-codex <file>`): Single file preview using `CliModeApp`
-2. **Dev Mode** (`md-review-codex` or `md-review-codex <dir>`): File browser with tree view using `DevModeApp`
+1. **CLI Mode** (`md-review-server <file>`): Single file preview using `CliModeApp`
+2. **Dev Mode** (`md-review-server` or `md-review-server <dir>`): File browser with tree view using `DevModeApp`
 
 Mode detection happens in `App.tsx` via `/api/files` endpoint availability.
 

@@ -55,7 +55,7 @@ const ACTIVE_FILE = process.env.ACTIVE_FILE || null;
 const READONLY = process.env.READONLY === 'true';
 
 if (HOST === '0.0.0.0') {
-  console.warn('Warning: md-review-codex is listening on 0.0.0.0 without authentication.');
+  console.warn('Warning: md-review-server is listening on 0.0.0.0 without authentication.');
 }
 
 const app = new Hono();

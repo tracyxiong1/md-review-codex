@@ -49,12 +49,12 @@ const args = mri(process.argv.slice(2), {
 // Help message
 if (args.help) {
   console.log(`
-md-review-codex - Review Markdown files with sidecar comments for Codex
+md-review-server - Review Markdown files with sidecar comments and HTTP APIs
 
 Usage:
-  md-review-codex [options]              Browse markdown files in current directory
-  md-review-codex <file> [options]       Preview a specific Markdown file
-  md-review-codex <directory> [options]  Browse Markdown files in a directory
+  md-review-server [options]              Browse markdown files in current directory
+  md-review-server <file> [options]       Preview a specific Markdown file
+  md-review-server <directory> [options]  Browse Markdown files in a directory
 
 Options:
   -p, --port <port>          Server port (default: 3030)
@@ -67,9 +67,9 @@ Options:
   -v, --version              Show version number
 
 Examples:
-  md-review-codex
-  md-review-codex docs --active-file guide.v2.md
-  md-review-codex README.md --port 8080
+  md-review-server
+  md-review-server docs --active-file guide.v2.md
+  md-review-server README.md --port 8080
 `);
   process.exit(0);
 }
@@ -94,7 +94,7 @@ process.env.ACTIVE_FILE = activeFile;
 process.env.READONLY = args.readonly ? 'true' : 'false';
 
 if (host === '0.0.0.0') {
-  console.warn('Warning: md-review-codex will listen on 0.0.0.0 without authentication.');
+  console.warn('Warning: md-review-server will listen on 0.0.0.0 without authentication.');
 }
 
 // If file is specified, validate it
@@ -141,7 +141,7 @@ if (file) {
   console.log(`Directory: ${baseDir}`);
 }
 
-console.log('Starting md-review-codex...');
+console.log('Starting md-review-server...');
 console.log(`   Port: ${port}`);
 console.log(`   Host: ${host}`);
 console.log(`   Review dir: ${args['review-dir']}`);

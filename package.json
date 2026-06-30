@@ -1,24 +1,31 @@
 {
-  "name": "md-review-codex",
+  "name": "md-review-server",
   "version": "0.1.0",
-  "description": "Codex-first Markdown review loop with sidecar comments and HTTP APIs",
+  "description": "Local Markdown review server with visual comments, sidecar storage, and HTTP APIs",
   "type": "module",
   "bin": {
-    "md-review-codex": "bin/md-review.js"
+    "md-review-server": "bin/md-review.js"
   },
   "files": [
     "bin",
     "dist",
-    "server"
+    "server/app.js",
+    "server/comment-store.js",
+    "server/index.js",
+    "skills"
   ],
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tracyxiong1/md-review-codex.git"
+    "url": "git+https://github.com/tracyxiong1/md-review-server.git"
   },
   "bugs": {
-    "url": "https://github.com/tracyxiong1/md-review-codex/issues"
+    "url": "https://github.com/tracyxiong1/md-review-server/issues"
   },
-  "homepage": "https://github.com/tracyxiong1/md-review-codex#readme",
+  "homepage": "https://github.com/tracyxiong1/md-review-server#readme",
   "scripts": {
     "dev": "concurrently 'pnpm run server' 'pnpm run client'",
     "client": "vite",

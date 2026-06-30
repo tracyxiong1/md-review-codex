@@ -9,7 +9,7 @@ describe('FileCommentStore', () => {
   let store;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'md-review-codex-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'md-review-server-'));
     store = new FileCommentStore({
       rootDir: tempDir,
       reviewDir: '.reviews',

@@ -88,6 +88,17 @@ describe('DevModeApp', () => {
     expect(screen.getByTitle('Open sidebar')).toBeInTheDocument();
   });
 
+  it('links the collapsed sidebar GitHub icon to the md-review-server repository', () => {
+    window.history.replaceState(null, '', '/?file=sample.v3.md');
+
+    render(<DevModeApp />);
+
+    expect(screen.getByLabelText('View on GitHub')).toHaveAttribute(
+      'href',
+      'https://github.com/tracyxiong1/md-review-server',
+    );
+  });
+
   it('selects a newly added successor version of the current file', () => {
     render(<DevModeApp />);
 

@@ -2,12 +2,18 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DevModeApp } from './DevModeApp';
 
+const mocks = vi.hoisted(() => ({
+  reloadFiles: vi.fn(),
+  setSelectedFile: vi.fn(),
+  useFileWatch: vi.fn(),
+}));
+
 vi.mock('../hooks/useFileList', () => ({
   useFileList: () => ({
     files: [{ name: 'sample.v3.md', path: 'sample.v3.md', dir: '.' }],
     selectedFile: 'sample.v3.md',
-    setSelectedFile: vi.fn(),
-    reload: vi.fn(),
+    setSelectedFile: mocks.setSelectedFile,
+    reload: mocks.reloadFiles,
     loading: false,
     error: null,
   }),
@@ -36,7 +42,7 @@ vi.mock('../hooks/useComments', () => ({
 }));
 
 vi.mock('../hooks/useFileWatch', () => ({
-  useFileWatch: vi.fn(),
+  useFileWatch: mocks.useFileWatch,
 }));
 
 vi.mock('../hooks/useResizable', () => ({
@@ -64,6 +70,7 @@ vi.mock('./ThemeToggle', () => ({
 describe('DevModeApp', () => {
   beforeEach(() => {
     window.history.replaceState(null, '', '/');
+    vi.clearAllMocks();
   });
 
   it('keeps the file tree open when no file is specified in the URL', () => {
@@ -79,5 +86,23 @@ describe('DevModeApp', () => {
 
     expect(screen.queryByTestId('file-tree')).not.toBeInTheDocument();
     expect(screen.getByTitle('Open sidebar')).toBeInTheDocument();
+  });
+
+  it('selects a newly added successor version of the current file', () => {
+    render(<DevModeApp />);
+
+    const onFileAdded = mocks.useFileWatch.mock.calls[0][1];
+    onFileAdded('sample.v4.md');
+
+    expect(mocks.reloadFiles).toHaveBeenCalledWith('sample.v4.md');
+  });
+
+  it('refreshes the file tree without selecting review queue files', () => {
+    render(<DevModeApp />);
+
+    const onFileAdded = mocks.useFileWatch.mock.calls[0][1];
+    onFileAdded('sample.review.md');
+
+    expect(mocks.reloadFiles).toHaveBeenCalledWith(null);
   });
 });

@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useRef } from 'react';
 
 interface FileInfo {
   name: string;
@@ -10,7 +10,7 @@ interface FileListData {
   files: FileInfo[];
   selectedFile: string | null;
   setSelectedFile: (file: string | null) => void;
-  reload: () => void;
+  reload: (preferredFile?: string | null) => void;
   loading: boolean;
   error: Error | null;
 }
@@ -38,8 +38,10 @@ export const useFileList = (): FileListData => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [reloadTrigger, setReloadTrigger] = useState<number>(0);
+  const preferredReloadFileRef = useRef<string | null>(null);
 
-  const reload = useCallback(() => {
+  const reload = useCallback((preferredFile?: string | null) => {
+    preferredReloadFileRef.current = preferredFile || null;
     setReloadTrigger((value) => value + 1);
   }, []);
 
@@ -59,8 +61,14 @@ export const useFileList = (): FileListData => {
 
         const data = await response.json();
         const nextFiles = data.files || [];
+        const preferredFile = preferredReloadFileRef.current;
+        preferredReloadFileRef.current = null;
         setFiles(nextFiles);
         setSelectedFile((currentFile) => {
+          if (preferredFile && nextFiles.some((file: FileInfo) => file.path === preferredFile)) {
+            updateFileInUrl(preferredFile);
+            return preferredFile;
+          }
           if (currentFile && nextFiles.some((file: FileInfo) => file.path === currentFile)) {
             return currentFile;
           }

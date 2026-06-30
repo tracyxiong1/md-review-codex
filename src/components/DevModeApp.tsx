@@ -10,8 +10,41 @@ import { ErrorDisplay } from './ErrorDisplay';
 import { ThemeToggle } from './ThemeToggle';
 import '../styles/devmode.css';
 
+const VERSIONED_MARKDOWN_RE = /^(?<stem>.+?)(?:\.v(?<version>\d+))?(?<ext>\.md|\.markdown|\.mdx)$/;
+
 function shouldCollapseSidebarByDefault() {
   return new URLSearchParams(window.location.search).has('file');
+}
+
+function parseMarkdownVersion(filePath: string) {
+  const parts = filePath.split('/');
+  const fileName = parts[parts.length - 1];
+  const match = fileName.match(VERSIONED_MARKDOWN_RE);
+  if (!match?.groups) {
+    return null;
+  }
+
+  return {
+    dir: parts.slice(0, -1).join('/'),
+    stem: match.groups.stem,
+    ext: match.groups.ext,
+    version: Number(match.groups.version || 0),
+  };
+}
+
+function isNewerVersionOfCurrentFile(currentFile: string | null, addedPath: string) {
+  if (!currentFile) return false;
+
+  const current = parseMarkdownVersion(currentFile);
+  const added = parseMarkdownVersion(addedPath);
+  if (!current || !added) return false;
+
+  return (
+    added.dir === current.dir &&
+    added.stem === current.stem &&
+    added.ext === current.ext &&
+    added.version > current.version
+  );
 }
 
 export const DevModeApp = () => {
@@ -42,8 +75,8 @@ export const DevModeApp = () => {
         commentState.reload();
       }
     },
-    () => {
-      reloadFiles();
+    (addedPath) => {
+      reloadFiles(isNewerVersionOfCurrentFile(selectedFile, addedPath) ? addedPath : null);
     },
   );
 

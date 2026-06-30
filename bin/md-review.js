@@ -5,6 +5,7 @@ import { resolve, dirname, relative } from 'path';
 import { existsSync, readFileSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import mri from 'mri';
+import { handleSkillCommand } from './skill-manager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -13,6 +14,7 @@ const packageRoot = resolve(__dirname, '..');
 const pkg = JSON.parse(readFileSync(resolve(packageRoot, 'package.json'), 'utf-8'));
 
 const SERVER_READY_MESSAGE = 'md-review server started';
+const rawArgs = process.argv.slice(2);
 
 // Port validation function
 function validatePort(value, name) {
@@ -30,7 +32,7 @@ function isMarkdownFile(filePath) {
 }
 
 // Parse arguments
-const args = mri(process.argv.slice(2), {
+const args = mri(rawArgs, {
   alias: {
     p: 'port',
     h: 'help',
@@ -46,6 +48,10 @@ const args = mri(process.argv.slice(2), {
   boolean: ['help', 'version', 'open', 'readonly'],
 });
 
+if (args._[0] === 'skill') {
+  process.exit(handleSkillCommand({ packageRoot, argv: rawArgs.slice(1) }));
+}
+
 // Help message
 if (args.help) {
   console.log(`
@@ -55,6 +61,7 @@ Usage:
   md-review-server [options]              Browse markdown files in current directory
   md-review-server <file> [options]       Preview a specific Markdown file
   md-review-server <directory> [options]  Browse Markdown files in a directory
+  md-review-server skill <command>        Install, update, or inspect bundled Codex skills
 
 Options:
   -p, --port <port>          Server port (default: 3030)
@@ -70,6 +77,8 @@ Examples:
   md-review-server
   md-review-server docs --active-file guide.v2.md
   md-review-server README.md --port 8080
+  md-review-server skill install
+  md-review-server skill update --force
 `);
   process.exit(0);
 }

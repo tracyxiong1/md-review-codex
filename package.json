@@ -7,7 +7,8 @@
     "md-review-server": "bin/md-review.js"
   },
   "files": [
-    "bin",
+    "bin/md-review.js",
+    "bin/skill-manager.js",
     "dist",
     "server/app.js",
     "server/comment-store.js",

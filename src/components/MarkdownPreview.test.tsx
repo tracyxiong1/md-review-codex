@@ -103,4 +103,39 @@ describe('MarkdownPreview', () => {
     expect(screen.getByText('Added the missing setup details.')).toBeInTheDocument();
     expect(screen.getByText('guide.v3.md:2')).toBeInTheDocument();
   });
+
+  it('closes processed comment marker tips when clicking outside', async () => {
+    const user = userEvent.setup();
+    const targetComments: Comment[] = [
+      {
+        id: 'c001',
+        file: 'guide.v3.md',
+        text: 'Please clarify the setup steps',
+        selectedText: 'setup',
+        startLine: 2,
+        endLine: 2,
+        status: 'resolved',
+        targetFile: 'guide.v4.md',
+        targetStartLine: 3,
+        resolution: 'Added the missing setup details.',
+        createdAt: new Date('2026-06-30T00:00:00Z'),
+      },
+    ];
+
+    render(
+      <MarkdownPreview
+        content={'# Guide\n\nClear setup steps'}
+        filename="guide.v4.md"
+        comments={[]}
+        targetComments={targetComments}
+      />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Processed comments on line 3' }));
+    expect(screen.getByText('Added the missing setup details.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('heading', { name: 'Guide' }));
+
+    expect(screen.queryByText('Added the missing setup details.')).not.toBeInTheDocument();
+  });
 });

@@ -45,11 +45,27 @@ const getStatusClassName = (status = 'resolved') => `status-${status.replace(/_/
 
 const ProcessedCommentMarker = ({ line, comments }: ProcessedCommentMarkerProps) => {
   const [open, setOpen] = useState(false);
+  const markerRef = useRef<HTMLSpanElement>(null);
   const firstComment = comments[0];
   const markerStatus = firstComment.status || 'resolved';
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!markerRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, [open]);
+
   return (
-    <span className="processed-comment-marker">
+    <span className="processed-comment-marker" ref={markerRef}>
       <button
         type="button"
         className={`processed-comment-marker-button ${getStatusClassName(markerStatus)}`}

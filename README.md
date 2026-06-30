@@ -275,6 +275,33 @@ pnpm build
 pnpm lint
 ```
 
+## 发布流程
+
+项目使用 GitHub Actions 和 npm Trusted Publishing 发布 npm 包，不需要在 GitHub Secrets 中保存长期 `NPM_TOKEN`。
+
+npm 包后台需要配置 Trusted Publisher：
+
+- Package：`md-review-server`
+- Publisher：GitHub Actions
+- Owner：`tracyxiong1`
+- Repository：`md-review-server`
+- Workflow filename：`release-please.yml`
+
+发布步骤：
+
+1. 使用语义化 commit 合并改动到 `main`
+2. `release-please` 自动创建或更新 release PR
+3. 合并 release PR 后，workflow 创建 GitHub Release 和版本 tag
+4. 同一个 workflow 在 tag 对应代码上执行 `lint`、`test`、`build`
+5. 验证 npm 上不存在同版本后，通过 OIDC 发布到 npm
+
+发布完成后可验证：
+
+```sh
+npm view md-review-server version --registry=https://registry.npmjs.org/
+npx -y md-review-server@latest skill doctor
+```
+
 ## License
 
 [MIT](./LICENSE)

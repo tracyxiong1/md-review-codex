@@ -9,6 +9,7 @@ document: docs/example.v1.md
 next_version: docs/example.v2.md
 
 ## C001
+
 source: docs/example.v1.md:L42-L48
 quote: "ABase 写入不在 RDS 事务内"
 status: open
@@ -16,6 +17,7 @@ comment: 需要补充 RDS 与 ABase 一致性边界。
 resolution:
 
 ## C002
+
 source: docs/example.v1.md:L77
 quote:
 status: open
@@ -27,6 +29,7 @@ resolution:
 
 ```md
 ## C001
+
 source: docs/example.v1.md:L42-L48
 quote: "ABase 写入不在 RDS 事务内"
 status: resolved

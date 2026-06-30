@@ -92,10 +92,9 @@ export const useComments = (filePath?: string | null): UseCommentsData => {
 
   const deleteComment = useCallback(
     async (id: string, file: string) => {
-      const response = await fetch(
-        `/api/comments/${id}?file=${encodeURIComponent(file)}`,
-        { method: 'DELETE' },
-      );
+      const response = await fetch(`/api/comments/${id}?file=${encodeURIComponent(file)}`, {
+        method: 'DELETE',
+      });
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || `API request failed: ${response.status}`);

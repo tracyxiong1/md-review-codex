@@ -132,6 +132,7 @@ docs/example.v1.md:L42
 
 ```md
 ## C001
+
 source: docs/example.v1.md:L42-L48
 quote: "长行中的局部选区"
 status: open

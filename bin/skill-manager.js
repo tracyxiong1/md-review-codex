@@ -1,11 +1,4 @@
-import {
-  cpSync,
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 
 export const SKILL_NAME = 'markdown-review-loop';
@@ -98,7 +91,9 @@ export function printSkillStatus(status) {
   console.log(`Bundled: ${status.bundledVersion || 'missing'}`);
   console.log(`Installed: ${status.installedVersion || 'missing'}`);
   console.log(`Path: ${status.target}`);
-  console.log(`Status: ${status.upToDate ? 'up to date' : status.installed ? 'update available' : 'not installed'}`);
+  console.log(
+    `Status: ${status.upToDate ? 'up to date' : status.installed ? 'update available' : 'not installed'}`,
+  );
 }
 
 export function printSkillHelp() {
@@ -115,11 +110,7 @@ Examples:
 `);
 }
 
-export function handleSkillCommand({
-  packageRoot,
-  argv,
-  env = process.env,
-} = {}) {
+export function handleSkillCommand({ packageRoot, argv, env = process.env } = {}) {
   const subcommand = argv[0] || 'doctor';
   const force = argv.includes('--force');
   const quiet = argv.includes('--quiet');

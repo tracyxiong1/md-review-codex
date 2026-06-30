@@ -1,13 +1,7 @@
 import { mkdir, readFile, readdir, rename, writeFile } from 'fs/promises';
 import { dirname, extname, isAbsolute, join, resolve } from 'path';
 
-const VALID_STATUSES = new Set([
-  'open',
-  'resolved',
-  'partially_resolved',
-  'unresolved',
-  'ignored',
-]);
+const VALID_STATUSES = new Set(['open', 'resolved', 'partially_resolved', 'unresolved', 'ignored']);
 
 function normalizeReviewFile(file) {
   if (!file || typeof file !== 'string') {

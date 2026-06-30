@@ -86,12 +86,10 @@ function getLineOffset(node: Node, intraOffset: number): number | undefined {
 
 function getSelectionContext(range: Range): { beforeText?: string; afterText?: string } {
   const contextLength = 80;
-  const startText = range.startContainer.nodeType === Node.TEXT_NODE
-    ? (range.startContainer as Text).data
-    : '';
-  const endText = range.endContainer.nodeType === Node.TEXT_NODE
-    ? (range.endContainer as Text).data
-    : '';
+  const startText =
+    range.startContainer.nodeType === Node.TEXT_NODE ? (range.startContainer as Text).data : '';
+  const endText =
+    range.endContainer.nodeType === Node.TEXT_NODE ? (range.endContainer as Text).data : '';
 
   return {
     beforeText: startText.slice(Math.max(0, range.startOffset - contextLength), range.startOffset),

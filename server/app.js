@@ -137,7 +137,11 @@ export function createApp(options = {}) {
 
     try {
       const files = await scanMarkdownFiles(baseDir);
-      return c.json({ files, baseDir, selectedFile: resolveSelectedFile(files, options.activeFile) });
+      return c.json({
+        files,
+        baseDir,
+        selectedFile: resolveSelectedFile(files, options.activeFile),
+      });
     } catch (err) {
       console.error('Error scanning markdown files:', err.message);
       return jsonError(c, 'Failed to scan markdown files');

@@ -33,6 +33,7 @@ resolution:
 source: docs/example.v1.md:L42-L48
 quote: "ABase 写入不在 RDS 事务内"
 status: resolved
+target: docs/example.v2.md:L42-L44
 comment: 需要补充 RDS 与 ABase 一致性边界。
 resolution: 已补充说明：ABase 写入位于 RDS 事务外，当前实现先写 ABase 内容，再写 RDS 消息元数据。
 ```

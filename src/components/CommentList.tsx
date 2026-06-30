@@ -9,6 +9,12 @@ export interface Comment {
   startLine: number;
   endLine: number;
   status?: ReviewCommentStatus;
+  file?: string;
+  targetFile?: string;
+  targetStartLine?: number;
+  targetEndLine?: number;
+  targetSelectedText?: string;
+  resolution?: string;
   createdAt: Date | string;
 }
 

@@ -101,6 +101,9 @@ curl -X PATCH 'http://127.0.0.1:<port>/api/comments' \
         "file": "docs/example.v1.md",
         "status": "resolved",
         "targetFile": "docs/example.v2.md",
+        "targetStartLine": 42,
+        "targetEndLine": 44,
+        "targetSelectedText": "一致性边界说明",
         "resolution": "已补充一致性边界说明。"
       }
     ]
@@ -113,6 +116,14 @@ curl -X PATCH 'http://127.0.0.1:<port>/api/comments' \
 - `partially_resolved`：评论已部分处理，`resolution` 中说明剩余问题。
 - `unresolved`：评论未处理，`resolution` 中说明阻塞原因。
 - `ignored`：仅在用户或 agent 明确跳过评论时使用。
+
+目标落点字段用于在下一版 Markdown 中显示处理结果角标：
+
+- `targetFile`：评论处理后对应的新版本文件。
+- `targetStartLine` / `targetEndLine`：新版本文件中的处理落点行号。
+- `targetSelectedText`：新版本中与处理结果最相关的文本片段。
+
+当评论已处理或部分处理时，应尽量回写目标落点字段。无法可靠定位目标落点时，可以只回写 `targetFile` 和 `resolution`，并在 `resolution` 中说明原因。
 
 ## 接收粘贴评论
 

@@ -186,6 +186,7 @@ export function createApp(options = {}) {
       const comments = await store.listComments({
         file: c.req.query('file') || undefined,
         status: c.req.query('status') || undefined,
+        targetFile: c.req.query('targetFile') || undefined,
       });
       return c.json(comments);
     } catch (err) {

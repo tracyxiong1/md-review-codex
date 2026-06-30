@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { MarkdownPreview } from './MarkdownPreview';
 import { Comment } from './CommentList';
@@ -62,5 +63,44 @@ describe('MarkdownPreview', () => {
 
     expect(screen.queryByRole('button', { name: 'Show comments' })).not.toBeInTheDocument();
     expect(screen.getByText('Loaded comment')).toBeInTheDocument();
+  });
+
+  it('shows processed comment markers on target lines', async () => {
+    const user = userEvent.setup();
+    const targetComments: Comment[] = [
+      {
+        id: 'c001',
+        file: 'guide.v3.md',
+        text: 'Please clarify the setup steps',
+        selectedText: 'setup',
+        startLine: 2,
+        endLine: 2,
+        status: 'resolved',
+        targetFile: 'guide.v4.md',
+        targetStartLine: 3,
+        targetEndLine: 3,
+        targetSelectedText: 'clear setup steps',
+        resolution: 'Added the missing setup details.',
+        createdAt: new Date('2026-06-30T00:00:00Z'),
+      },
+    ];
+
+    render(
+      <MarkdownPreview
+        content={'# Guide\n\nClear setup steps'}
+        filename="guide.v4.md"
+        comments={[]}
+        targetComments={targetComments}
+      />,
+    );
+
+    const marker = screen.getByRole('button', { name: 'Processed comments on line 3' });
+    expect(marker).toBeInTheDocument();
+
+    await user.click(marker);
+
+    expect(screen.getByText('Please clarify the setup steps')).toBeInTheDocument();
+    expect(screen.getByText('Added the missing setup details.')).toBeInTheDocument();
+    expect(screen.getByText('guide.v3.md:2')).toBeInTheDocument();
   });
 });

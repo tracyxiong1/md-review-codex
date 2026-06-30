@@ -127,6 +127,9 @@ describe('review API', () => {
             file: 'guide.v1.md',
             status: 'resolved',
             targetFile: 'guide.v2.md',
+            targetStartLine: 4,
+            targetEndLine: 4,
+            targetSelectedText: 'Updated paragraph',
             resolution: 'Updated in the next version',
           },
         ],
@@ -137,6 +140,20 @@ describe('review API', () => {
         id: 'c001',
         status: 'resolved',
         targetFile: 'guide.v2.md',
+        targetStartLine: 4,
+        targetEndLine: 4,
+        targetSelectedText: 'Updated paragraph',
+      },
+    ]);
+
+    const targetResponse = await app.request('/api/comments?targetFile=guide.v2.md');
+    await expect(targetResponse.json()).resolves.toMatchObject([
+      {
+        id: 'c001',
+        file: 'guide.v1.md',
+        status: 'resolved',
+        targetFile: 'guide.v2.md',
+        targetStartLine: 4,
       },
     ]);
 

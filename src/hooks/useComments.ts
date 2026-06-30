@@ -7,6 +7,7 @@ interface ReviewSession {
 
 interface UseCommentsData {
   comments: ReviewComment[];
+  targetComments: ReviewComment[];
   loading: boolean;
   error: Error | null;
   readonly: boolean;
@@ -28,6 +29,7 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
 
 export const useComments = (filePath?: string | null): UseCommentsData => {
   const [comments, setComments] = useState<ReviewComment[]>([]);
+  const [targetComments, setTargetComments] = useState<ReviewComment[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [readonly, setReadonly] = useState(false);
@@ -41,6 +43,7 @@ export const useComments = (filePath?: string | null): UseCommentsData => {
     const loadComments = async () => {
       if (!filePath) {
         setComments([]);
+        setTargetComments([]);
         setLoading(false);
         return;
       }
@@ -49,15 +52,25 @@ export const useComments = (filePath?: string | null): UseCommentsData => {
       setError(null);
 
       try {
-        const [session, nextComments] = await Promise.all([
+        const [session, nextComments, nextTargetComments] = await Promise.all([
           fetchJson<ReviewSession>('/api/session'),
           fetchJson<ReviewComment[]>(`/api/comments?file=${encodeURIComponent(filePath)}`),
+          fetchJson<ReviewComment[]>(`/api/comments?targetFile=${encodeURIComponent(filePath)}`),
         ]);
         setReadonly(Boolean(session.readonly));
         setComments(nextComments);
+        setTargetComments(
+          nextTargetComments.filter(
+            (comment) =>
+              comment.status !== 'open' &&
+              comment.status !== 'ignored' &&
+              typeof comment.targetStartLine === 'number',
+          ),
+        );
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Unknown error'));
         setComments([]);
+        setTargetComments([]);
       } finally {
         setLoading(false);
       }
@@ -114,6 +127,7 @@ export const useComments = (filePath?: string | null): UseCommentsData => {
 
   return {
     comments,
+    targetComments,
     loading,
     error,
     readonly,

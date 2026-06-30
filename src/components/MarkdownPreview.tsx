@@ -1,5 +1,5 @@
-import { useRef, useEffect } from 'react';
-import ReactMarkdown, { Components } from 'react-markdown';
+import { useRef, useEffect, useMemo, useState, type ElementType } from 'react';
+import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeHighlight from 'rehype-highlight';
@@ -19,6 +19,7 @@ interface MarkdownPreviewProps {
   filename: string;
   filePath?: string;
   comments: Comment[];
+  targetComments?: Comment[];
   readonly?: boolean;
   onCreateComment?: (input: CreateCommentInput) => Promise<void> | void;
   onDeleteComment?: (id: string, file: string) => Promise<void> | void;
@@ -26,98 +27,158 @@ interface MarkdownPreviewProps {
   onEditComment?: (id: string, file: string, comment: string) => Promise<void> | void;
 }
 
-// Components that add data-line-start attribute to elements
-const componentsWithLinePosition: Components = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  code: ({ node, className, children, ...props }: any) => {
-    const match = /language-(\w+)/.exec(className || '');
-    const language = match ? match[1] : '';
+interface ProcessedCommentMarkerProps {
+  line: number;
+  comments: Comment[];
+}
 
-    // Render mermaid diagrams
-    if (language === 'mermaid') {
-      const code = String(children).replace(/\n$/, '');
-      return <MermaidBlock code={code} />;
+const getCommentText = (comment: Comment) => comment.comment || comment.text || '';
+
+const getStatusLabel = (status = 'resolved') =>
+  ({
+    resolved: 'Resolved',
+    partially_resolved: 'Partially resolved',
+    unresolved: 'Unresolved',
+  })[status] || status;
+
+const getStatusClassName = (status = 'resolved') => `status-${status.replace(/_/g, '-')}`;
+
+const ProcessedCommentMarker = ({ line, comments }: ProcessedCommentMarkerProps) => {
+  const [open, setOpen] = useState(false);
+  const firstComment = comments[0];
+  const markerStatus = firstComment.status || 'resolved';
+
+  return (
+    <span className="processed-comment-marker">
+      <button
+        type="button"
+        className={`processed-comment-marker-button ${getStatusClassName(markerStatus)}`}
+        aria-label={`Processed comments on line ${line}`}
+        title={`Processed comments on line ${line}`}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen((value) => !value);
+        }}
+      >
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h7" />
+          <path d="m16 8 2 2 4-4" />
+        </svg>
+        {comments.length > 1 && <span className="processed-comment-count">{comments.length}</span>}
+      </button>
+      {open && (
+        <span className="processed-comment-popover" role="dialog">
+          {comments.map((comment) => (
+            <span key={`${comment.file || 'comment'}:${comment.id}`} className="processed-comment">
+              <span className="processed-comment-meta">
+                <span className={`processed-comment-status ${getStatusClassName(comment.status)}`}>
+                  {getStatusLabel(comment.status)}
+                </span>
+                <span className="processed-comment-source">
+                  {comment.file || 'source'}:{comment.startLine}
+                </span>
+              </span>
+              <span className="processed-comment-text">{getCommentText(comment)}</span>
+              {comment.resolution && (
+                <span className="processed-comment-resolution">{comment.resolution}</span>
+              )}
+            </span>
+          ))}
+        </span>
+      )}
+    </span>
+  );
+};
+
+const createComponentsWithLinePosition = (
+  targetCommentsByLine: Map<number, Comment[]>,
+): Components => {
+  const renderMarker = (line?: number) => {
+    if (typeof line !== 'number') {
+      return null;
     }
 
-    // Default code rendering
+    const comments = targetCommentsByLine.get(line);
+    if (!comments?.length) {
+      return null;
+    }
+
+    return <ProcessedCommentMarker line={line} comments={comments} />;
+  };
+
+  const withLineMarker = (
+    Tag: ElementType,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    { node, children, ...props }: any,
+  ) => {
+    const line = node?.position?.start?.line;
+    const marker = renderMarker(line);
+    const className = [props.className, marker ? 'markdown-line-with-processed-comment' : null]
+      .filter(Boolean)
+      .join(' ');
+
     return (
-      <code className={className} {...props}>
+      <Tag {...props} data-line-start={line} className={className || undefined}>
+        {marker}
         {children}
-      </code>
+      </Tag>
     );
-  },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  p: ({ node, children, ...props }: any) => (
-    <p data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </p>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  h1: ({ node, children, ...props }: any) => (
-    <h1 data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </h1>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  h2: ({ node, children, ...props }: any) => (
-    <h2 data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </h2>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  h3: ({ node, children, ...props }: any) => (
-    <h3 data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </h3>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  h4: ({ node, children, ...props }: any) => (
-    <h4 data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </h4>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  h5: ({ node, children, ...props }: any) => (
-    <h5 data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </h5>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  h6: ({ node, children, ...props }: any) => (
-    <h6 data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </h6>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  li: ({ node, children, ...props }: any) => (
-    <li data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </li>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  blockquote: ({ node, children, ...props }: any) => (
-    <blockquote data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </blockquote>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  pre: ({ node, children, ...props }: any) => (
-    <pre data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </pre>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  td: ({ node, children, ...props }: any) => (
-    <td data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </td>
-  ),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  th: ({ node, children, ...props }: any) => (
-    <th data-line-start={node?.position?.start?.line} {...props}>
-      {children}
-    </th>
-  ),
+  };
+
+  return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
+    code: ({ node, className, children, ...props }: any) => {
+      const match = /language-(\w+)/.exec(className || '');
+      const language = match ? match[1] : '';
+
+      // Render mermaid diagrams
+      if (language === 'mermaid') {
+        const code = String(children).replace(/\n$/, '');
+        return <MermaidBlock code={code} />;
+      }
+
+      // Default code rendering
+      return (
+        <code className={className} {...props}>
+          {children}
+        </code>
+      );
+    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    p: (props: any) => withLineMarker('p', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    h1: (props: any) => withLineMarker('h1', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    h2: (props: any) => withLineMarker('h2', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    h3: (props: any) => withLineMarker('h3', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    h4: (props: any) => withLineMarker('h4', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    h5: (props: any) => withLineMarker('h5', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    h6: (props: any) => withLineMarker('h6', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    li: (props: any) => withLineMarker('li', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    blockquote: (props: any) => withLineMarker('blockquote', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    pre: (props: any) => withLineMarker('pre', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    td: (props: any) => withLineMarker('td', props),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    th: (props: any) => withLineMarker('th', props),
+  };
 };
 
 export const MarkdownPreview = ({
@@ -125,6 +186,7 @@ export const MarkdownPreview = ({
   filename,
   filePath,
   comments,
+  targetComments = [],
   readonly = false,
   onCreateComment,
   onDeleteComment,
@@ -135,6 +197,25 @@ export const MarkdownPreview = ({
   const previousCommentCountRef = useRef(comments.length);
   const { isDark } = useDarkMode();
   const { frontmatter, body } = parseMdContent(content, filename);
+  const targetCommentsByLine = useMemo(() => {
+    const next = new Map<number, Comment[]>();
+
+    for (const comment of targetComments) {
+      if (typeof comment.targetStartLine !== 'number') {
+        continue;
+      }
+
+      const commentsForLine = next.get(comment.targetStartLine) || [];
+      commentsForLine.push(comment);
+      next.set(comment.targetStartLine, commentsForLine);
+    }
+
+    return next;
+  }, [targetComments]);
+  const componentsWithLinePosition = useMemo(
+    () => createComponentsWithLinePosition(targetCommentsByLine),
+    [targetCommentsByLine],
+  );
   const {
     width: commentsSidebarWidth,
     isResizing,

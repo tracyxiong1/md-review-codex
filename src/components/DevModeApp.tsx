@@ -213,6 +213,7 @@ export const DevModeApp = () => {
             filename={filename}
             filePath={selectedFile || filename}
             comments={commentState.comments}
+            targetComments={commentState.targetComments}
             readonly={commentState.readonly}
             onCreateComment={commentState.createComment}
             onDeleteComment={commentState.deleteComment}

@@ -125,6 +125,40 @@ describe('FileCommentStore', () => {
     });
   });
 
+  it('stores target line anchors and filters comments by target file', async () => {
+    const comment = await store.createComment({
+      file: 'guide.v3.md',
+      startLine: 10,
+      endLine: 10,
+      selectedText: 'old wording',
+      comment: 'Rewrite this sentence',
+    });
+
+    await store.updateComment(comment.id, {
+      file: 'guide.v3.md',
+      status: 'resolved',
+      targetFile: 'guide.v4.md',
+      targetStartLine: 12,
+      targetEndLine: 14,
+      targetSelectedText: 'new wording',
+      resolution: 'Rewrote the paragraph in v4.',
+    });
+
+    await expect(store.listComments({ targetFile: 'guide.v4.md' })).resolves.toMatchObject([
+      {
+        id: comment.id,
+        file: 'guide.v3.md',
+        status: 'resolved',
+        targetFile: 'guide.v4.md',
+        targetStartLine: 12,
+        targetEndLine: 14,
+        targetSelectedText: 'new wording',
+        resolution: 'Rewrote the paragraph in v4.',
+      },
+    ]);
+    await expect(store.listComments({ targetFile: 'guide.v5.md' })).resolves.toEqual([]);
+  });
+
   it('edits and deletes comments', async () => {
     const comment = await store.createComment({
       file: 'guide.md',

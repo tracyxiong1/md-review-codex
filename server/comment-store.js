@@ -58,6 +58,9 @@ function applyPatch(comment, patch, timestamp) {
     'comment',
     'status',
     'targetFile',
+    'targetStartLine',
+    'targetEndLine',
+    'targetSelectedText',
     'resolution',
     'consumedBy',
     'startLine',
@@ -176,6 +179,9 @@ export class FileCommentStore {
   applyFilter(comments, filter) {
     return comments.filter((comment) => {
       if (filter.status && comment.status !== filter.status) {
+        return false;
+      }
+      if (filter.targetFile && comment.targetFile !== filter.targetFile) {
         return false;
       }
       return true;

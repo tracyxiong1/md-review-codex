@@ -52,6 +52,7 @@ export const CliModeApp = () => {
       content={content}
       filename={filename}
       comments={commentState.comments}
+      targetComments={commentState.targetComments}
       readonly={commentState.readonly}
       onCreateComment={commentState.createComment}
       onDeleteComment={commentState.deleteComment}

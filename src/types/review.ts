@@ -19,6 +19,9 @@ export interface ReviewComment {
   comment: string;
   status: ReviewCommentStatus;
   targetFile?: string;
+  targetStartLine?: number;
+  targetEndLine?: number;
+  targetSelectedText?: string;
   resolution?: string;
   consumedBy?: string;
   consumedAt?: string;

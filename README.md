@@ -1,7 +1,5 @@
 # md-review-server
 
-简体中文 | [日本語](./README-ja.md)
-
 [![npm version](https://img.shields.io/npm/v/md-review-server.svg)](https://www.npmjs.com/package/md-review-server)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
 [![GitHub](https://img.shields.io/badge/GitHub-md--review--server-black.svg)](https://github.com/tracyxiong1/md-review-server)
@@ -294,6 +292,13 @@ npm 包后台需要配置 Trusted Publisher：
 3. 合并 release PR 后，workflow 创建 GitHub Release 和版本 tag
 4. 同一个 workflow 在 tag 对应代码上执行 `lint`、`test`、`build`
 5. 验证 npm 上不存在同版本后，通过 OIDC 发布到 npm
+
+也可以手动创建版本 tag 触发同一个发布流程：
+
+```sh
+npm version patch
+git push origin main --tags
+```
 
 发布完成后可验证：
 

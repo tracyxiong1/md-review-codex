@@ -1,7 +1,7 @@
 {
   "name": "md-review-server",
   "version": "0.1.0",
-  "description": "Local Markdown review server with visual comments, sidecar storage, and HTTP APIs",
+  "description": "Visual Markdown review server with Codex skill, sidecar comments, and HTTP APIs",
   "type": "module",
   "bin": {
     "md-review-server": "bin/md-review.js"
@@ -51,12 +51,20 @@
   "keywords": [
     "markdown",
     "review",
+    "codex",
+    "skill",
+    "agent",
     "cli",
     "preview",
     "comments",
+    "http-api",
+    "sidecar",
     "documentation"
   ],
-  "author": "ryo-manba",
+  "author": "tracyxiong1",
+  "contributors": [
+    "ryo-manba"
+  ],
   "license": "MIT",
   "funding": "https://github.com/ryo-manba/md-review?sponsor=1",
   "packageManager": "pnpm@10.23.0",

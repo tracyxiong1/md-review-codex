@@ -2,12 +2,56 @@
 
 简体中文 | [日本語](./README-ja.md)
 
+[![npm version](https://img.shields.io/npm/v/md-review-server.svg)](https://www.npmjs.com/package/md-review-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](./LICENSE)
+[![GitHub](https://img.shields.io/badge/GitHub-md--review--server-black.svg)](https://github.com/tracyxiong1/md-review-server)
+
 ![demo](./assets/demo.gif)
 
-`md-review-server` 是一个本地 Markdown 可视化评审服务。它保留 `md-review` 的 Markdown 预览、选区评论、评论列表和文件树能力，并将评论存储迁移到 sidecar review 文件，同时提供本地 HTTP API，供 Codex、其他 agent 或脚本读取评论并回写处理状态。
+`md-review-server` 是面向 Codex 文档迭代的本地 Markdown 可视化评审服务。它提供浏览器预览、选区批注、sidecar 评论文件、HTTP API 和内置 `markdown-review-loop` Codex skill，用于把“用户可视化评论 -> agent 读取评论 -> 生成下一版 Markdown -> 回写评论状态”串成一个本地评审循环。
+
+## 快速开始
+
+### 使用 Codex Skill
+
+安装或更新内置 `markdown-review-loop` skill：
+
+```sh
+npx -y md-review-server@latest skill install
+```
+
+检查本机 skill 状态：
+
+```sh
+npx -y md-review-server@latest skill doctor
+```
+
+在 Codex 中显式触发：
+
+```text
+使用 $markdown-review-loop 帮我启动这份 Markdown 的评审循环。
+```
+
+skill 会启动或复用本地 review server，读取 open 评论，生成下一版 Markdown，并通过 HTTP API 回写 `resolved`、`partially_resolved` 或 `unresolved` 状态。
+
+### 手动启动 Review Server
+
+无需全局安装时可直接运行：
+
+```sh
+npx -y md-review-server@latest docs --port 3030 --active-file docs/guide.md
+```
+
+也可以全局安装：
+
+```sh
+npm install -g md-review-server
+md-review-server docs --port 3030
+```
 
 ## 功能
 
+- 内置 `markdown-review-loop` Codex skill，可通过 npm 安装和更新
 - 按原始结构预览 Markdown 和 MDX 文件
 - 解析并展示 Frontmatter 元数据
 - 对选中文本和指定行范围创建评论
@@ -26,7 +70,7 @@
 npm install -g md-review-server
 ```
 
-当前首轮交付以本地使用为主，也可以在仓库中直接运行：
+也可以在仓库中直接运行：
 
 ```sh
 pnpm install

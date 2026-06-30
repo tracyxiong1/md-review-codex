@@ -8,6 +8,7 @@ interface UseResizableOptions {
   direction?: 'left' | 'right'; // 'left' = grows to right, 'right' = grows to left
   collapsible?: boolean; // Allow closing by dragging below minWidth
   collapseThreshold?: number; // Width threshold to trigger collapse
+  initialCollapsed?: boolean;
 }
 
 export const useResizable = ({
@@ -18,6 +19,7 @@ export const useResizable = ({
   direction = 'left',
   collapsible = false,
   collapseThreshold = 100,
+  initialCollapsed = false,
 }: UseResizableOptions) => {
   const [width, setWidth] = useState<number>(() => {
     if (storageKey) {
@@ -32,7 +34,7 @@ export const useResizable = ({
     return initialWidth;
   });
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(initialCollapsed);
   const [isResizing, setIsResizing] = useState(false);
   const startXRef = useRef<number>(0);
   const startWidthRef = useRef<number>(0);
@@ -101,6 +103,7 @@ export const useResizable = ({
     width,
     isResizing,
     isCollapsed,
+    setIsCollapsed,
     handleMouseDown,
     toggleCollapse,
   };

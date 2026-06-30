@@ -132,12 +132,14 @@ export const MarkdownPreview = ({
   onEditComment,
 }: MarkdownPreviewProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
+  const previousCommentCountRef = useRef(comments.length);
   const { isDark } = useDarkMode();
   const { frontmatter, body } = parseMdContent(content, filename);
   const {
     width: commentsSidebarWidth,
     isResizing,
     isCollapsed,
+    setIsCollapsed,
     handleMouseDown,
     toggleCollapse,
   } = useResizable({
@@ -148,6 +150,7 @@ export const MarkdownPreview = ({
     direction: 'right',
     collapsible: true,
     collapseThreshold: 70,
+    initialCollapsed: comments.length === 0,
   });
 
   // Update highlight.js theme based on dark mode
@@ -165,6 +168,15 @@ export const MarkdownPreview = ({
       }
     }
   }, [isDark]);
+
+  useEffect(() => {
+    const previousCommentCount = previousCommentCountRef.current;
+    previousCommentCountRef.current = comments.length;
+
+    if (previousCommentCount === 0 && comments.length > 0) {
+      setIsCollapsed(false);
+    }
+  }, [comments.length, setIsCollapsed]);
 
   const handleSubmitComment = (
     comment: string,

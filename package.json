@@ -7,6 +7,7 @@
     "md-review-server": "bin/md-review.js"
   },
   "files": [
+    "assets",
     "bin/md-review.js",
     "bin/skill-manager.js",
     "dist",

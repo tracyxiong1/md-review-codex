@@ -12,6 +12,20 @@ vi.mock('../hooks/useDarkMode', () => ({
   useDarkMode: () => ({ isDark: false }),
 }));
 
+const diffViewerMock = vi.hoisted(() => vi.fn());
+
+vi.mock('react-diff-viewer-continued', () => ({
+  default: (props: { oldValue: string; newValue: string }) => {
+    diffViewerMock(props);
+    return (
+      <div data-testid="diff-viewer">
+        <div>old:{props.oldValue}</div>
+        <div>new:{props.newValue}</div>
+      </div>
+    );
+  },
+}));
+
 describe('MarkdownPreview', () => {
   const baseProps = {
     content: '# Test\n\nBody',
@@ -137,5 +151,51 @@ describe('MarkdownPreview', () => {
     await user.click(screen.getByRole('heading', { name: 'Guide' }));
 
     expect(screen.queryByText('Added the missing setup details.')).not.toBeInTheDocument();
+  });
+
+  it('toggles between markdown preview and diff view when compare content exists', async () => {
+    const user = userEvent.setup();
+    diffViewerMock.mockClear();
+
+    render(
+      <MarkdownPreview
+        content={'# Guide\n\nNew text'}
+        filename="guide.v2.md"
+        comments={[]}
+        compareFilename="guide.v1.md"
+        compareContent={'# Guide\n\nOld text'}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'Compare with guide.v1.md' })).toBeInTheDocument();
+    expect(screen.queryByTestId('diff-viewer')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Compare with guide.v1.md' }));
+
+    const diffViewer = screen.getByTestId('diff-viewer');
+    expect(diffViewer).toBeInTheDocument();
+    expect(diffViewer).toHaveTextContent('old:# Guide Old text');
+    expect(diffViewer).toHaveTextContent('new:# Guide New text');
+    expect(diffViewerMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        hideSummary: true,
+        showDiffOnly: false,
+        splitView: true,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Use unified diff view' }));
+
+    expect(diffViewerMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        hideSummary: true,
+        showDiffOnly: false,
+        splitView: false,
+      }),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Show rendered preview' }));
+
+    expect(screen.queryByTestId('diff-viewer')).not.toBeInTheDocument();
   });
 });

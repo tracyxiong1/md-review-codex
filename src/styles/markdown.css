@@ -6,11 +6,16 @@
 
 .markdown-container {
   flex: 1;
+  width: 100%;
   max-width: 900px;
   padding: 2rem;
   position: relative;
   margin: 0 auto;
   min-width: 0;
+}
+
+.markdown-container.diff-active {
+  max-width: 1200px;
 }
 
 .comments-sidebar {
@@ -126,6 +131,33 @@
   margin: 0;
 }
 
+.markdown-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.diff-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.diff-toggle-button:hover {
+  background: var(--bg-tertiary);
+}
+
 .frontmatter-block {
   margin: 0.5rem 0 0;
   padding: 0.5rem 0 0;
@@ -162,6 +194,68 @@
   color: var(--text-primary);
   position: relative;
   padding-left: 0;
+}
+
+.markdown-diff-view {
+  overflow: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border-secondary);
+  border-radius: 8px;
+  background: var(--bg-primary);
+}
+
+.diff-view-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.diff-view-mode-button {
+  min-height: 1.75rem;
+  padding: 0 0.6rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.diff-view-mode-button:hover {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+.diff-view-mode-button.active {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-color: var(--border-primary);
+}
+
+.markdown-diff-view pre {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.markdown-diff-view table {
+  width: 100% !important;
+  max-width: 100%;
+  table-layout: fixed;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.markdown-diff-view td {
+  min-width: 0;
 }
 
 .markdown-content .highlight-line {

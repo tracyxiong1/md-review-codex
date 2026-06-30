@@ -78,6 +78,7 @@
     "mri": "^1.2.0",
     "open": "^11.0.0",
     "react": "^19.0.0",
+    "react-diff-viewer-continued": "4.2.2",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",

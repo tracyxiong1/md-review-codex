@@ -6,11 +6,15 @@ const mocks = vi.hoisted(() => ({
   reloadFiles: vi.fn(),
   setSelectedFile: vi.fn(),
   useFileWatch: vi.fn(),
+  markdownPreview: vi.fn(),
 }));
 
 vi.mock('../hooks/useFileList', () => ({
   useFileList: () => ({
-    files: [{ name: 'sample.v3.md', path: 'sample.v3.md', dir: '.' }],
+    files: [
+      { name: 'sample.v2.md', path: 'sample.v2.md', dir: '.' },
+      { name: 'sample.v3.md', path: 'sample.v3.md', dir: '.' },
+    ],
     selectedFile: 'sample.v3.md',
     setSelectedFile: mocks.setSelectedFile,
     reload: mocks.reloadFiles,
@@ -20,13 +24,22 @@ vi.mock('../hooks/useFileList', () => ({
 }));
 
 vi.mock('../hooks/useMarkdown', () => ({
-  useMarkdown: () => ({
-    content: '# Sample\n',
-    filename: 'sample.v3.md',
-    loading: false,
-    error: null,
-    reload: vi.fn(),
-  }),
+  useMarkdown: (filePath?: string | null) =>
+    filePath === 'sample.v2.md'
+      ? {
+          content: '# Sample\n\nOld text\n',
+          filename: 'sample.v2.md',
+          loading: false,
+          error: null,
+          reload: vi.fn(),
+        }
+      : {
+          content: '# Sample\n\nNew text\n',
+          filename: 'sample.v3.md',
+          loading: false,
+          error: null,
+          reload: vi.fn(),
+        },
 }));
 
 vi.mock('../hooks/useComments', () => ({
@@ -60,7 +73,10 @@ vi.mock('./FileTree', () => ({
 }));
 
 vi.mock('./MarkdownPreview', () => ({
-  MarkdownPreview: () => <div data-testid="markdown-preview" />,
+  MarkdownPreview: (props: unknown) => {
+    mocks.markdownPreview(props);
+    return <div data-testid="markdown-preview" />;
+  },
 }));
 
 vi.mock('./ThemeToggle', () => ({
@@ -96,6 +112,17 @@ describe('DevModeApp', () => {
     expect(screen.getByLabelText('View on GitHub')).toHaveAttribute(
       'href',
       'https://github.com/tracyxiong1/md-review-server',
+    );
+  });
+
+  it('passes the previous version markdown to the preview for comparison', () => {
+    render(<DevModeApp />);
+
+    expect(mocks.markdownPreview).toHaveBeenCalledWith(
+      expect.objectContaining({
+        compareFilename: 'sample.v2.md',
+        compareContent: '# Sample\n\nOld text\n',
+      }),
     );
   });
 

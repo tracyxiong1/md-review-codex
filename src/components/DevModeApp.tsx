@@ -47,6 +47,36 @@ function isNewerVersionOfCurrentFile(currentFile: string | null, addedPath: stri
   );
 }
 
+function findPreviousVersionFile(currentFile: string | null, files: { path: string }[]) {
+  if (!currentFile) return null;
+
+  const current = parseMarkdownVersion(currentFile);
+  if (!current || current.version === 0) return null;
+
+  let previousPath: string | null = null;
+  let previousVersion = -1;
+
+  for (const file of files) {
+    if (file.path === currentFile) continue;
+
+    const candidate = parseMarkdownVersion(file.path);
+    if (!candidate) continue;
+
+    const isSameDocument =
+      candidate.dir === current.dir &&
+      candidate.stem === current.stem &&
+      candidate.ext === current.ext;
+    if (!isSameDocument) continue;
+
+    if (candidate.version < current.version && candidate.version > previousVersion) {
+      previousPath = file.path;
+      previousVersion = candidate.version;
+    }
+  }
+
+  return previousPath;
+}
+
 export const DevModeApp = () => {
   const {
     files,
@@ -65,6 +95,13 @@ export const DevModeApp = () => {
     error: markdownError,
     reload,
   } = useMarkdown(selectedFile);
+  const previousVersionFile = findPreviousVersionFile(selectedFile, files);
+  const {
+    content: previousVersionContent,
+    filename: previousVersionFilename,
+    loading: previousVersionLoading,
+    error: previousVersionError,
+  } = useMarkdown(previousVersionFile);
   const commentState = useComments(selectedFile);
 
   // Watch for file changes and reload current file
@@ -212,6 +249,22 @@ export const DevModeApp = () => {
             content={content}
             filename={filename}
             filePath={selectedFile || filename}
+            compareFilename={
+              previousVersionFile &&
+              !previousVersionLoading &&
+              !previousVersionError &&
+              previousVersionContent
+                ? previousVersionFilename || previousVersionFile
+                : undefined
+            }
+            compareContent={
+              previousVersionFile &&
+              !previousVersionLoading &&
+              !previousVersionError &&
+              previousVersionContent
+                ? previousVersionContent
+                : undefined
+            }
             comments={commentState.comments}
             targetComments={commentState.targetComments}
             readonly={commentState.readonly}

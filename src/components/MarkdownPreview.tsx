@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, useState, type ElementType } from 'react';
 import ReactMarkdown, { type Components } from 'react-markdown';
+import ReactDiffViewer from 'react-diff-viewer-continued';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeHighlight from 'rehype-highlight';
@@ -18,6 +19,8 @@ interface MarkdownPreviewProps {
   content: string;
   filename: string;
   filePath?: string;
+  compareFilename?: string;
+  compareContent?: string;
   comments: Comment[];
   targetComments?: Comment[];
   readonly?: boolean;
@@ -201,6 +204,8 @@ export const MarkdownPreview = ({
   content,
   filename,
   filePath,
+  compareFilename,
+  compareContent,
   comments,
   targetComments = [],
   readonly = false,
@@ -211,8 +216,13 @@ export const MarkdownPreview = ({
 }: MarkdownPreviewProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const previousCommentCountRef = useRef(comments.length);
+  const [activeDiffKey, setActiveDiffKey] = useState<string | null>(null);
+  const [diffViewMode, setDiffViewMode] = useState<'split' | 'unified'>('split');
   const { isDark } = useDarkMode();
   const { frontmatter, body } = parseMdContent(content, filename);
+  const canCompare = Boolean(compareFilename && typeof compareContent === 'string');
+  const diffKey = canCompare ? `${compareFilename}->${filename}` : null;
+  const showDiff = Boolean(diffKey && activeDiffKey === diffKey);
   const targetCommentsByLine = useMemo(() => {
     const next = new Map<number, Comment[]>();
 
@@ -337,9 +347,22 @@ export const MarkdownPreview = ({
       className={`markdown-with-comments ${isResizing ? 'resizing' : ''} ${isCollapsed ? 'comments-collapsed' : ''}`}
       style={{ paddingRight: isCollapsed ? '80px' : `${commentsSidebarWidth + 20}px` }}
     >
-      <div className="markdown-container">
+      <div className={`markdown-container ${showDiff ? 'diff-active' : ''}`}>
         <header className="markdown-header">
-          <h1>{filename}</h1>
+          <div className="markdown-title-row">
+            <h1>{filename}</h1>
+            {canCompare && (
+              <button
+                type="button"
+                className="diff-toggle-button"
+                aria-label={showDiff ? 'Show rendered preview' : `Compare with ${compareFilename}`}
+                title={showDiff ? 'Show rendered preview' : `Compare with ${compareFilename}`}
+                onClick={() => setActiveDiffKey(showDiff ? null : diffKey)}
+              >
+                {showDiff ? 'Preview' : 'Compare'}
+              </button>
+            )}
+          </div>
           {Object.keys(frontmatter).length > 0 && (
             <dl className="frontmatter-block">
               {Object.entries(frontmatter).map(([key, value]) => (
@@ -351,16 +374,51 @@ export const MarkdownPreview = ({
             </dl>
           )}
         </header>
-        <div className="markdown-content" ref={contentRef}>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm, remarkBreaks]}
-            rehypePlugins={[rehypeHighlight]}
-            components={componentsWithLinePosition}
-          >
-            {body}
-          </ReactMarkdown>
-        </div>
-        {!readonly && (
+        {showDiff && canCompare ? (
+          <div className="markdown-diff-view">
+            <div className="diff-view-toolbar" aria-label="Diff view mode">
+              <button
+                type="button"
+                className={`diff-view-mode-button ${diffViewMode === 'split' ? 'active' : ''}`}
+                aria-label="Use split diff view"
+                aria-pressed={diffViewMode === 'split'}
+                onClick={() => setDiffViewMode('split')}
+              >
+                Split
+              </button>
+              <button
+                type="button"
+                className={`diff-view-mode-button ${diffViewMode === 'unified' ? 'active' : ''}`}
+                aria-label="Use unified diff view"
+                aria-pressed={diffViewMode === 'unified'}
+                onClick={() => setDiffViewMode('unified')}
+              >
+                Unified
+              </button>
+            </div>
+            <ReactDiffViewer
+              oldValue={compareContent || ''}
+              newValue={content}
+              splitView={diffViewMode === 'split'}
+              hideSummary
+              showDiffOnly={false}
+              useDarkTheme={isDark}
+              leftTitle={compareFilename}
+              rightTitle={filename}
+            />
+          </div>
+        ) : (
+          <div className="markdown-content" ref={contentRef}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkBreaks]}
+              rehypePlugins={[rehypeHighlight]}
+              components={componentsWithLinePosition}
+            >
+              {body}
+            </ReactMarkdown>
+          </div>
+        )}
+        {!showDiff && !readonly && (
           <SelectionPopover containerRef={contentRef} onSubmitComment={handleSubmitComment} />
         )}
       </div>

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawn } from 'child_process';
-import { resolve, dirname } from 'path';
+import { resolve, dirname, relative } from 'path';
 import { existsSync, readFileSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import mri from 'mri';
@@ -38,32 +38,38 @@ const args = mri(process.argv.slice(2), {
   },
   default: {
     port: '3030',
+    host: '127.0.0.1',
+    'review-dir': '.reviews',
     open: true,
+    readonly: false,
   },
-  boolean: ['help', 'version', 'open'],
+  boolean: ['help', 'version', 'open', 'readonly'],
 });
 
 // Help message
 if (args.help) {
   console.log(`
-md-review - Review and annotate Markdown files with comments
+md-review-codex - Review Markdown files with sidecar comments for Codex
 
 Usage:
-  md-review [options]              Start in dev mode (browse all markdown files)
-  md-review <file> [options]       Preview a specific markdown file (.md or .markdown)
-  md-review <directory> [options]  Browse markdown files in a specific directory
+  md-review-codex [options]              Browse markdown files in current directory
+  md-review-codex <file> [options]       Preview a specific Markdown file
+  md-review-codex <directory> [options]  Browse Markdown files in a directory
 
 Options:
-  -p, --port <port>      Server port (default: 3030)
-  --no-open              Do not open browser automatically
-  -h, --help             Show this help message
-  -v, --version          Show version number
+  -p, --port <port>          Server port (default: 3030)
+  --host <host>              Server host (default: 127.0.0.1)
+  --review-dir <dir>         Review sidecar directory (default: .reviews)
+  --active-file <file>       Initial file to select in directory mode
+  --readonly                 Disable comment write APIs
+  --no-open                  Do not open browser automatically
+  -h, --help                 Show this help message
+  -v, --version              Show version number
 
 Examples:
-  md-review                        Start dev mode in current directory
-  md-review docs                   Browse markdown files in docs directory
-  md-review README.md              Preview README.md
-  md-review docs/guide.md --port 8080
+  md-review-codex
+  md-review-codex docs --active-file guide.v2.md
+  md-review-codex README.md --port 8080
 `);
   process.exit(0);
 }
@@ -76,10 +82,20 @@ if (args.version) {
 
 const file = args._[0];
 const port = validatePort(args.port, 'port');
+const host = args.host;
 const shouldOpen = args.open;
+const activeFile = args['active-file'] || '';
 
 // Set environment variables
 process.env.API_PORT = port;
+process.env.API_HOST = host;
+process.env.REVIEW_DIR = args['review-dir'];
+process.env.ACTIVE_FILE = activeFile;
+process.env.READONLY = args.readonly ? 'true' : 'false';
+
+if (host === '0.0.0.0') {
+  console.warn('Warning: md-review-codex will listen on 0.0.0.0 without authentication.');
+}
 
 // If file is specified, validate it
 if (file) {
@@ -95,6 +111,12 @@ if (file) {
   if (stats.isDirectory()) {
     // Dev mode with specified directory
     process.env.BASE_DIR = filePath;
+    if (activeFile) {
+      const activePath = resolve(activeFile);
+      if (activePath.startsWith(filePath)) {
+        process.env.ACTIVE_FILE = relative(filePath, activePath);
+      }
+    }
     console.log(`Directory: ${filePath}`);
   } else {
     // File mode
@@ -108,12 +130,27 @@ if (file) {
   }
 } else {
   // Dev mode - browse all markdown files
-  process.env.BASE_DIR = process.cwd();
-  console.log(`Directory: ${process.cwd()}`);
+  const baseDir = process.cwd();
+  process.env.BASE_DIR = baseDir;
+  if (activeFile) {
+    const activePath = resolve(activeFile);
+    if (activePath.startsWith(baseDir)) {
+      process.env.ACTIVE_FILE = relative(baseDir, activePath);
+    }
+  }
+  console.log(`Directory: ${baseDir}`);
 }
 
-console.log('Starting md-review...');
+console.log('Starting md-review-codex...');
 console.log(`   Port: ${port}`);
+console.log(`   Host: ${host}`);
+console.log(`   Review dir: ${args['review-dir']}`);
+if (process.env.ACTIVE_FILE) {
+  console.log(`   Active file: ${process.env.ACTIVE_FILE}`);
+}
+if (args.readonly) {
+  console.log('   Readonly: true');
+}
 
 // Start server
 const serverProcess = spawn('node', ['server/index.js'], {
@@ -130,8 +167,8 @@ serverProcess.stdout.on('data', async (data) => {
   process.stdout.write(data);
   const output = data.toString();
 
-  // Extract actual port from "API Server running on http://localhost:XXXX"
-  const portMatch = output.match(/API Server running on http:\/\/localhost:(\d+)/);
+  // Extract actual port from "API Server running on http://HOST:XXXX"
+  const portMatch = output.match(/API Server running on http:\/\/[^:]+:(\d+)/);
   if (portMatch) {
     actualPort = parseInt(portMatch[1], 10);
   }
@@ -141,7 +178,8 @@ serverProcess.stdout.on('data', async (data) => {
 
     if (shouldOpen) {
       const openModule = await import('open');
-      openModule.default(`http://localhost:${actualPort}`);
+      const browserHost = host === '0.0.0.0' ? '127.0.0.1' : host;
+      openModule.default(`http://${browserHost}:${actualPort}`);
     }
   }
 });

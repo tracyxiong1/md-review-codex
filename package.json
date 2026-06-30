@@ -1,10 +1,10 @@
 {
-  "name": "md-review",
-  "version": "1.4.0",
-  "description": "Review Markdown files in your browser with inline comments",
+  "name": "md-review-codex",
+  "version": "0.1.0",
+  "description": "Codex-first Markdown review loop with sidecar comments and HTTP APIs",
   "type": "module",
   "bin": {
-    "md-review": "bin/md-review.js"
+    "md-review-codex": "bin/md-review.js"
   },
   "files": [
     "bin",
@@ -13,12 +13,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ryo-manba/md-review.git"
+    "url": "git+https://github.com/tracyxiong1/md-review-codex.git"
   },
   "bugs": {
-    "url": "https://github.com/ryo-manba/md-review/issues"
+    "url": "https://github.com/tracyxiong1/md-review-codex/issues"
   },
-  "homepage": "https://github.com/ryo-manba/md-review#readme",
+  "homepage": "https://github.com/tracyxiong1/md-review-codex#readme",
   "scripts": {
     "dev": "concurrently 'pnpm run server' 'pnpm run client'",
     "client": "vite",

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 
 interface FileInfo {
   name: string;
@@ -10,17 +10,43 @@ interface FileListData {
   files: FileInfo[];
   selectedFile: string | null;
   setSelectedFile: (file: string | null) => void;
+  reload: () => void;
   loading: boolean;
   error: Error | null;
 }
 
 const API_URL = '/api/files';
+const FILE_QUERY_PARAM = 'file';
+
+function getFileFromUrl(): string | null {
+  return new URLSearchParams(window.location.search).get(FILE_QUERY_PARAM);
+}
+
+function updateFileInUrl(file: string | null) {
+  const url = new URL(window.location.href);
+  if (file) {
+    url.searchParams.set(FILE_QUERY_PARAM, file);
+  } else {
+    url.searchParams.delete(FILE_QUERY_PARAM);
+  }
+  window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+}
 
 export const useFileList = (): FileListData => {
   const [files, setFiles] = useState<FileInfo[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [reloadTrigger, setReloadTrigger] = useState<number>(0);
+
+  const reload = useCallback(() => {
+    setReloadTrigger((value) => value + 1);
+  }, []);
+
+  const selectFile = useCallback((file: string | null) => {
+    updateFileInUrl(file);
+    setSelectedFile(file);
+  }, []);
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -32,8 +58,18 @@ export const useFileList = (): FileListData => {
         }
 
         const data = await response.json();
-        setFiles(data.files || []);
-        setSelectedFile(data.selectedFile || null);
+        const nextFiles = data.files || [];
+        setFiles(nextFiles);
+        setSelectedFile((currentFile) => {
+          if (currentFile && nextFiles.some((file: FileInfo) => file.path === currentFile)) {
+            return currentFile;
+          }
+          const urlFile = getFileFromUrl();
+          if (urlFile && nextFiles.some((file: FileInfo) => file.path === urlFile)) {
+            return urlFile;
+          }
+          return data.selectedFile || null;
+        });
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Unknown error'));
       } finally {
@@ -42,7 +78,7 @@ export const useFileList = (): FileListData => {
     };
 
     fetchFiles();
-  }, []);
+  }, [reloadTrigger]);
 
-  return { files, selectedFile, setSelectedFile, loading, error };
+  return { files, selectedFile, setSelectedFile: selectFile, reload, loading, error };
 };

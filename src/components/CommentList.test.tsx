@@ -13,6 +13,7 @@ describe('CommentList', () => {
       selectedText: 'selected text 1',
       startLine: 1,
       endLine: 1,
+      status: 'open',
       createdAt: new Date('2025-01-01'),
     },
     {
@@ -21,6 +22,7 @@ describe('CommentList', () => {
       selectedText: 'selected text 2',
       startLine: 5,
       endLine: 10,
+      status: 'resolved',
       createdAt: new Date('2025-01-02'),
     },
   ];
@@ -114,6 +116,13 @@ describe('CommentList', () => {
     expect(screen.getByRole('button', { name: 'Line 5-10' })).toBeInTheDocument();
   });
 
+  it('should display comment status labels', () => {
+    render(<CommentList comments={mockComments} filename="test.md" />);
+
+    expect(screen.getByText('Open')).toBeInTheDocument();
+    expect(screen.getByText('Resolved')).toBeInTheDocument();
+  });
+
   it('should enter edit mode when edit button is clicked', async () => {
     const onEditComment = vi.fn();
 
@@ -181,6 +190,7 @@ describe('CommentList', () => {
       selectedText: 'a'.repeat(100),
       startLine: 1,
       endLine: 1,
+      status: 'open',
       createdAt: new Date(),
     };
 

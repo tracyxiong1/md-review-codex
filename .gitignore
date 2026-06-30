@@ -25,3 +25,7 @@ dist-ssr
 *.sw?
 
 coverage
+
+# Local review sidecars generated while dogfooding md-review-codex
+.reviews/
+**/.reviews/

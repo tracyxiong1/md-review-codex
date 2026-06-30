@@ -10,6 +10,10 @@ interface SavedSelection {
   text: string;
   startLine: number;
   endLine: number;
+  startOffset?: number;
+  endOffset?: number;
+  beforeText?: string;
+  afterText?: string;
 }
 
 interface SelectionPopoverProps {
@@ -19,6 +23,10 @@ interface SelectionPopoverProps {
     selectedText: string,
     startLine: number,
     endLine: number,
+    startOffset?: number,
+    endOffset?: number,
+    beforeText?: string,
+    afterText?: string,
   ) => void;
 }
 
@@ -65,6 +73,30 @@ function getSelectionLineRange(sel: Selection): { startLine: number; endLine: nu
   }
 
   return { startLine, endLine };
+}
+
+function getLineOffset(node: Node, intraOffset: number): number | undefined {
+  if (node.nodeType !== Node.TEXT_NODE) return undefined;
+
+  const text = (node as Text).data;
+  const fragment = text.slice(0, intraOffset);
+  const lastNewline = fragment.lastIndexOf('\n');
+  return lastNewline === -1 ? fragment.length : fragment.length - lastNewline - 1;
+}
+
+function getSelectionContext(range: Range): { beforeText?: string; afterText?: string } {
+  const contextLength = 80;
+  const startText = range.startContainer.nodeType === Node.TEXT_NODE
+    ? (range.startContainer as Text).data
+    : '';
+  const endText = range.endContainer.nodeType === Node.TEXT_NODE
+    ? (range.endContainer as Text).data
+    : '';
+
+  return {
+    beforeText: startText.slice(Math.max(0, range.startOffset - contextLength), range.startOffset),
+    afterText: endText.slice(range.endOffset, range.endOffset + contextLength),
+  };
 }
 
 export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPopoverProps) => {
@@ -151,6 +183,7 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
 
     // Get line numbers
     const lineRange = getSelectionLineRange(sel);
+    const { beforeText, afterText } = getSelectionContext(range);
 
     // Save selection range
     setSavedSelection({
@@ -158,6 +191,10 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
       text: sel.toString(),
       startLine: lineRange?.startLine ?? 1,
       endLine: lineRange?.endLine ?? 1,
+      startOffset: getLineOffset(range.startContainer, range.startOffset),
+      endOffset: getLineOffset(range.endContainer, range.endOffset),
+      beforeText,
+      afterText,
     });
 
     setPosition({
@@ -222,6 +259,10 @@ export const SelectionPopover = ({ containerRef, onSubmitComment }: SelectionPop
         savedSelection.text,
         savedSelection.startLine,
         savedSelection.endLine,
+        savedSelection.startOffset,
+        savedSelection.endOffset,
+        savedSelection.beforeText,
+        savedSelection.afterText,
       );
     }
     setComment('');

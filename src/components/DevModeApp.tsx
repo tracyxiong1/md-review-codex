@@ -1,30 +1,30 @@
 import { useState } from 'react';
 import { useFileList } from '../hooks/useFileList';
 import { useMarkdown } from '../hooks/useMarkdown';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useComments } from '../hooks/useComments';
 import { useResizable } from '../hooks/useResizable';
 import { useFileWatch } from '../hooks/useFileWatch';
 import { FileTree } from './FileTree';
 import { MarkdownPreview } from './MarkdownPreview';
 import { ErrorDisplay } from './ErrorDisplay';
-import { Comment } from './CommentList';
 import { ThemeToggle } from './ThemeToggle';
 import '../styles/devmode.css';
+
+function shouldCollapseSidebarByDefault() {
+  return new URLSearchParams(window.location.search).has('file');
+}
 
 export const DevModeApp = () => {
   const {
     files,
     selectedFile,
     setSelectedFile,
+    reload: reloadFiles,
     loading: filesLoading,
     error: filesError,
   } = useFileList();
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => !shouldCollapseSidebarByDefault());
   const [focusSearch, setFocusSearch] = useState<boolean>(false);
-  const [commentsMap, setCommentsMap] = useLocalStorage<Record<string, Comment[]>>(
-    'md-review-comments',
-    {},
-  );
   const {
     content,
     filename,
@@ -32,13 +32,20 @@ export const DevModeApp = () => {
     error: markdownError,
     reload,
   } = useMarkdown(selectedFile);
+  const commentState = useComments(selectedFile);
 
   // Watch for file changes and reload current file
-  useFileWatch((changedPath) => {
-    if (selectedFile === changedPath) {
-      reload();
-    }
-  });
+  useFileWatch(
+    (changedPath) => {
+      if (selectedFile === changedPath) {
+        reload();
+        commentState.reload();
+      }
+    },
+    () => {
+      reloadFiles();
+    },
+  );
 
   const {
     width: sidebarWidth,
@@ -172,11 +179,12 @@ export const DevModeApp = () => {
             content={content}
             filename={filename}
             filePath={selectedFile || filename}
-            comments={commentsMap[selectedFile || filename] || []}
-            onCommentsChange={(comments) => {
-              const key = selectedFile || filename;
-              setCommentsMap((prev) => ({ ...prev, [key]: comments }));
-            }}
+            comments={commentState.comments}
+            readonly={commentState.readonly}
+            onCreateComment={commentState.createComment}
+            onDeleteComment={commentState.deleteComment}
+            onDeleteAllComments={commentState.deleteAllComments}
+            onEditComment={commentState.editComment}
           />
         ) : (
           <div className="dev-placeholder">

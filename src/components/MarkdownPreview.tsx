@@ -12,13 +12,18 @@ import { MermaidBlock } from './MermaidBlock';
 import { useDarkMode } from '../hooks/useDarkMode';
 import { useResizable } from '../hooks/useResizable';
 import { parseMdContent } from '../lib/parseMdContent';
+import { CreateCommentInput } from '../types/review';
 
 interface MarkdownPreviewProps {
   content: string;
   filename: string;
   filePath?: string;
   comments: Comment[];
-  onCommentsChange: (comments: Comment[]) => void;
+  readonly?: boolean;
+  onCreateComment?: (input: CreateCommentInput) => Promise<void> | void;
+  onDeleteComment?: (id: string, file: string) => Promise<void> | void;
+  onDeleteAllComments?: (file: string) => Promise<void> | void;
+  onEditComment?: (id: string, file: string, comment: string) => Promise<void> | void;
 }
 
 // Components that add data-line-start attribute to elements
@@ -120,7 +125,11 @@ export const MarkdownPreview = ({
   filename,
   filePath,
   comments,
-  onCommentsChange,
+  readonly = false,
+  onCreateComment,
+  onDeleteComment,
+  onDeleteAllComments,
+  onEditComment,
 }: MarkdownPreviewProps) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const { isDark } = useDarkMode();
@@ -162,29 +171,39 @@ export const MarkdownPreview = ({
     selectedText: string,
     startLine: number,
     endLine: number,
+    startOffset?: number,
+    endOffset?: number,
+    beforeText?: string,
+    afterText?: string,
   ) => {
-    const newComment: Comment = {
-      id: crypto.randomUUID(),
-      text: comment,
+    if (!onCreateComment || readonly) return;
+
+    onCreateComment({
+      file: filePath || filename,
+      comment,
       selectedText,
       startLine,
       endLine,
-      createdAt: new Date(),
-    };
-
-    onCommentsChange([...comments, newComment]);
+      startOffset,
+      endOffset,
+      beforeText,
+      afterText,
+    });
   };
 
   const handleDeleteComment = (id: string) => {
-    onCommentsChange(comments.filter((c) => c.id !== id));
+    if (!onDeleteComment || readonly) return;
+    onDeleteComment(id, filePath || filename);
   };
 
   const handleDeleteAllComments = () => {
-    onCommentsChange([]);
+    if (!onDeleteAllComments || readonly) return;
+    onDeleteAllComments(filePath || filename);
   };
 
   const handleEditComment = (id: string, newText: string) => {
-    onCommentsChange(comments.map((c) => (c.id === id ? { ...c, text: newText } : c)));
+    if (!onEditComment || readonly) return;
+    onEditComment(id, filePath || filename, newText);
   };
 
   const handleLineClick = (line: number) => {
@@ -232,7 +251,9 @@ export const MarkdownPreview = ({
             {body}
           </ReactMarkdown>
         </div>
-        <SelectionPopover containerRef={contentRef} onSubmitComment={handleSubmitComment} />
+        {!readonly && (
+          <SelectionPopover containerRef={contentRef} onSubmitComment={handleSubmitComment} />
+        )}
       </div>
       {isCollapsed && (
         <button
@@ -259,11 +280,11 @@ export const MarkdownPreview = ({
           <CommentList
             comments={[...comments].sort((a, b) => a.startLine - b.startLine)}
             filename={filePath || filename}
-            onDeleteComment={handleDeleteComment}
-            onDeleteAll={handleDeleteAllComments}
+            onDeleteComment={!readonly ? handleDeleteComment : undefined}
+            onDeleteAll={!readonly ? handleDeleteAllComments : undefined}
             onClose={toggleCollapse}
             onLineClick={handleLineClick}
-            onEditComment={handleEditComment}
+            onEditComment={!readonly ? handleEditComment : undefined}
           />
         </aside>
       )}

@@ -1,17 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMarkdown } from '../hooks/useMarkdown';
 import { useFileWatch } from '../hooks/useFileWatch';
+import { useComments } from '../hooks/useComments';
 import { MarkdownPreview } from './MarkdownPreview';
 import { ErrorDisplay } from './ErrorDisplay';
-import { Comment } from './CommentList';
 
 export const CliModeApp = () => {
   const { content, filename, loading, error, reload } = useMarkdown();
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [commentsFile, setCommentsFile] = useState<string | null>(null);
+  const commentState = useComments(commentsFile);
+
+  useEffect(() => {
+    setCommentsFile(filename);
+  }, [filename]);
 
   // Watch for file changes and reload
   useFileWatch(() => {
     reload();
+    commentState.reload();
   });
 
   if (loading) {
@@ -45,8 +51,12 @@ export const CliModeApp = () => {
     <MarkdownPreview
       content={content}
       filename={filename}
-      comments={comments}
-      onCommentsChange={setComments}
+      comments={commentState.comments}
+      readonly={commentState.readonly}
+      onCreateComment={commentState.createComment}
+      onDeleteComment={commentState.deleteComment}
+      onDeleteAllComments={commentState.deleteAllComments}
+      onEditComment={commentState.editComment}
     />
   );
 };

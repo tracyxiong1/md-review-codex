@@ -1,12 +1,15 @@
 import { useState } from 'react';
+import { ReviewCommentStatus } from '../types/review';
 
 export interface Comment {
   id: string;
-  text: string;
+  comment?: string;
+  text?: string;
   selectedText: string;
   startLine: number;
   endLine: number;
-  createdAt: Date;
+  status?: ReviewCommentStatus;
+  createdAt: Date | string;
 }
 
 interface CommentListProps {
@@ -33,12 +36,25 @@ export const CommentList = ({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
 
+  const getCommentText = (comment: Comment) => comment.comment || comment.text || '';
+
+  const getStatusLabel = (status: ReviewCommentStatus = 'open') =>
+    ({
+      open: 'Open',
+      resolved: 'Resolved',
+      partially_resolved: 'Partially resolved',
+      unresolved: 'Unresolved',
+      ignored: 'Ignored',
+    })[status];
+  const getStatusClassName = (status: ReviewCommentStatus = 'open') =>
+    `status-${status.replace(/_/g, '-')}`;
+
   const formatComment = (comment: Comment) => {
     const lineRange =
       comment.startLine === comment.endLine
         ? `L${comment.startLine}`
         : `L${comment.startLine}-${comment.endLine}`;
-    return `${filename}:${lineRange}\n${comment.text}`;
+    return `${filename}:${lineRange}\n${getCommentText(comment)}`;
   };
 
   const handleCopyComment = async (comment: Comment) => {
@@ -65,7 +81,7 @@ export const CommentList = ({
 
   const handleStartEdit = (comment: Comment) => {
     setEditingId(comment.id);
-    setEditText(comment.text);
+    setEditText(getCommentText(comment));
   };
 
   const handleCancelEdit = () => {
@@ -205,16 +221,21 @@ export const CommentList = ({
           {comments.map((comment) => (
             <div key={comment.id} className="comment-item">
               <div className="comment-item-header">
-                <button
-                  className="comment-item-lines"
-                  onClick={() => onLineClick?.(comment.startLine)}
-                  title="Jump to line"
-                >
-                  Line{' '}
-                  {comment.startLine === comment.endLine
-                    ? comment.startLine
-                    : `${comment.startLine}-${comment.endLine}`}
-                </button>
+                <div className="comment-item-meta">
+                  <button
+                    className="comment-item-lines"
+                    onClick={() => onLineClick?.(comment.startLine)}
+                    title="Jump to line"
+                  >
+                    Line{' '}
+                    {comment.startLine === comment.endLine
+                      ? comment.startLine
+                      : `${comment.startLine}-${comment.endLine}`}
+                  </button>
+                  <span className={`comment-item-status ${getStatusClassName(comment.status)}`}>
+                    {getStatusLabel(comment.status)}
+                  </span>
+                </div>
                 <div className="comment-item-actions">
                   {onEditComment && editingId !== comment.id && (
                     <button
@@ -307,7 +328,7 @@ export const CommentList = ({
                   </div>
                 </div>
               ) : (
-                <div className="comment-item-text">{comment.text}</div>
+                <div className="comment-item-text">{getCommentText(comment)}</div>
               )}
             </div>
           ))}
